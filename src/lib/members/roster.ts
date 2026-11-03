@@ -10,6 +10,7 @@ import {
 } from "@/lib/auth/session";
 import { daysBetween } from "@/lib/dates";
 import { getDb } from "@/lib/db/client";
+import { DEV_RANK } from "@/lib/env";
 import { getCharacters } from "@/lib/stalzone/characters";
 import {
   fetchStalzone,
@@ -20,6 +21,7 @@ import type {
   CharacterClanInfo,
   CharacterProfileData,
   ClanMember,
+  ClanRank,
 } from "@/lib/stalzone/types";
 import { recordRoster } from "@/lib/tracker/tracker";
 import { isAllowedClan, RANK_BY_ID, REGION, type MemberData } from "./members";
@@ -54,6 +56,18 @@ export async function rememberMembership(
   ]);
 }
 
+/** Previews another rank while developing. Never applies outside `next dev`. */
+function withDevRank(clan: CharacterClanInfo): CharacterClanInfo {
+  if (
+    process.env.NODE_ENV !== "development" ||
+    !DEV_RANK ||
+    !Object.hasOwn(RANK_BY_ID, DEV_RANK)
+  ) {
+    return clan;
+  }
+  return { ...clan, member: { ...clan.member, rank: DEV_RANK as ClanRank } };
+}
+
 const loadLiveMembership = cache(
   async (accessToken: string, characterId?: string) => {
     if (!characterId) return null;
@@ -68,7 +82,7 @@ const loadLiveMembership = cache(
         logFailure("remember the membership"),
       ),
     );
-    return clan;
+    return withDevRank(clan);
   },
 );
 
@@ -80,7 +94,7 @@ export const loadMembership = cache(
       const stored = await getStoredMembership(db, characterId).catch(
         logFailure("read the membership"),
       );
-      if (stored) return stored;
+      if (stored) return withDevRank(stored);
     }
     return loadLiveMembership(accessToken, characterId);
   },
