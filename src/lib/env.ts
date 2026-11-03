@@ -9,4 +9,5 @@ export const STALZONE_API_URL =
   process.env.STALZONE_API_URL ?? "https://eapi.stalzone.com";
 export const SESSION_SECRET = process.env.SESSION_SECRET;
 export const DATABASE_URL = process.env.DATABASE_URL;
+export const DATABASE_POOL_SIZE = Number(process.env.DATABASE_POOL_SIZE) || 10;
 export const CRON_SECRET = process.env.CRON_SECRET;

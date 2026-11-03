@@ -21,6 +21,17 @@ Locally, nothing is recorded while the app or `npm run tracker` is stopped. When
 
 After changing `src/lib/db/schema.ts`, run `npm run db:generate` and then `npm run db:migrate`.
 
+## Deploying
+
+1. Set the variables from `.env.example` on the server, with new secrets and a real database password. The server won't start if a required one is missing.
+2. Set `APP_URL` to the `https://` address, and register `APP_URL/api/auth/callback` in `@stalzone_api_bot` (/myapps).
+3. Run `npm run db:migrate` against the production database, on every deploy that adds a migration.
+4. Run `npm run build` and `npm start`.
+5. Schedule the tracker (see above). On a server of your own, `node scripts/tracker.mjs` works too, with `APP_URL` and `CRON_SECRET` in its environment.
+6. Back up the database regularly: the recorded history can't be rebuilt from the API.
+
+Behind a reverse proxy, forward the original `Host` and `X-Forwarded-*` headers, or saving notes and lineups will be rejected. On serverless hosting, use the database's connection pooler address and set `DATABASE_POOL_SIZE=1`.
+
 ## Getting Started
 
 First, run the development server:

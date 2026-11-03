@@ -30,6 +30,8 @@ let key: Promise<Uint8Array> | undefined;
 
 /** Derives the 32-byte A256GCM key from SESSION_SECRET. */
 function getKey() {
+  // Without a secret the key would be publicly known, and anyone could forge a session.
+  if (!SESSION_SECRET) throw new Error("SESSION_SECRET is not set");
   key ??= crypto.subtle
     .digest("SHA-256", new TextEncoder().encode(SESSION_SECRET))
     .then((digest) => new Uint8Array(digest));

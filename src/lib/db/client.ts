@@ -1,10 +1,14 @@
 import "server-only";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import { DATABASE_URL } from "@/lib/env";
+import { DATABASE_POOL_SIZE, DATABASE_URL } from "@/lib/env";
 import * as schema from "./schema";
 
-const createDb = (url: string) => drizzle(postgres(url), { schema });
+// Prepared statements are off because connection poolers on hosted databases don't support them.
+const createDb = (url: string) =>
+  drizzle(postgres(url, { prepare: false, max: DATABASE_POOL_SIZE }), {
+    schema,
+  });
 
 export type Db = ReturnType<typeof createDb>;
 
