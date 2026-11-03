@@ -1,0 +1,15 @@
+services:
+  db:
+    image: postgres:18
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: stalzone
+      POSTGRES_PASSWORD: stalzone_local
+      POSTGRES_DB: stalzone_clan
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - stalzone_db:/var/lib/postgresql
+
+volumes:
+  stalzone_db:

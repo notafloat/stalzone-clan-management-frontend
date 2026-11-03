@@ -1,0 +1,97 @@
+import {
+  bigserial,
+  date,
+  index,
+  integer,
+  jsonb,
+  pgTable,
+  primaryKey,
+  text,
+  timestamp,
+  unique,
+} from "drizzle-orm/pg-core";
+import type { Lineup } from "../squads/lineup";
+import type { ClanInfo } from "../stalzone/types";
+
+const timestampTz = (name: string) => timestamp(name, { withTimezone: true });
+
+/** Keyed by UUID, because a player's name can change. */
+export const players = pgTable(
+  "players",
+  {
+    uuid: text("uuid").primaryKey(),
+    name: text("name").notNull(),
+    rank: text("rank").notNull(),
+    joinedAt: timestampTz("joined_at").notNull(),
+    lastLogin: timestampTz("last_login"),
+    /** Null while the player is in the clan. */
+    leftAt: timestampTz("left_at"),
+    /** Set after a live check, so later page loads can find the player without the API. */
+    characterId: text("character_id"),
+    updatedAt: timestampTz("updated_at").notNull().defaultNow(),
+  },
+  (table) => [
+    index("players_name_idx").on(table.name),
+    index("players_character_id_idx").on(table.characterId),
+  ],
+);
+
+/** The latest clan details, saved by the tracker so pages don't wait for the API. */
+export const clanInfo = pgTable("clan_info", {
+  id: integer("id").primaryKey(),
+  data: jsonb("data").$type<ClanInfo>().notNull(),
+  updatedAt: timestampTz("updated_at").notNull().defaultNow(),
+});
+
+export type EventType = "joined" | "left" | "promoted" | "demoted" | "renamed";
+
+export const clanEvents = pgTable(
+  "clan_events",
+  {
+    id: bigserial("id", { mode: "number" }).primaryKey(),
+    playerUuid: text("player_uuid")
+      .notNull()
+      .references(() => players.uuid),
+    /** The player's name when the event happened. */
+    playerName: text("player_name").notNull(),
+    type: text("type").$type<EventType>().notNull(),
+    /** A rank, or a name for "renamed". */
+    fromValue: text("from_value"),
+    toValue: text("to_value"),
+    /** Exact for "joined"; otherwise when the tracker noticed, up to one run late. */
+    occurredAt: timestampTz("occurred_at").notNull(),
+    /** Only officers and above may read or change these. */
+    note: text("note"),
+    noteUpdatedBy: text("note_updated_by"),
+    noteUpdatedAt: timestampTz("note_updated_at"),
+  },
+  (table) => [
+    index("clan_events_occurred_at_idx").on(table.occurredAt),
+    unique("clan_events_once").on(
+      table.playerUuid,
+      table.type,
+      table.occurredAt,
+    ),
+  ],
+);
+
+/** The clan's one current lineup. `version` stops officers overwriting each other's saves. */
+export const lineups = pgTable("lineups", {
+  id: integer("id").primaryKey(),
+  data: jsonb("data").$type<Lineup>().notNull(),
+  version: integer("version").notNull(),
+  updatedBy: text("updated_by").notNull(),
+  updatedAt: timestampTz("updated_at").notNull().defaultNow(),
+});
+
+export const activityDays = pgTable(
+  "activity_days",
+  {
+    playerUuid: text("player_uuid")
+      .notNull()
+      .references(() => players.uuid),
+    /** The login's day in server time. */
+    day: date("day", { mode: "string" }).notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.playerUuid, table.day] })],
+);

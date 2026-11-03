@@ -1,5 +1,26 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Clan history tracker
+
+The Stalzone API only reports the clan's current state, so a scheduled job records changes in Postgres: joins, departures, rank changes, renames and days with a login. The site works without it, but records no history.
+
+1. Create a database: `createdb -U postgres stalzone_clan`
+2. Generate a secret: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
+3. Add both to `.env.local`:
+   ```
+   DATABASE_URL=postgres://postgres:YOUR_PASSWORD@localhost:5432/stalzone_clan
+   CRON_SECRET=the-generated-secret
+   ```
+4. Create the tables: `npm run db:migrate`
+5. With the app running, start the job in a second terminal: `npm run tracker`
+6. Open `/clan` or `/members` while signed in. Loading the roster needs a member's token, and this is how members get added.
+
+Pages read members from this database, so they load quickly but can be up to one run behind. If the data is more than an hour old, pages go back to the much slower live API, and saving notes or lineups always checks the player's rank live.
+
+Locally, nothing is recorded while the app or `npm run tracker` is stopped. When hosted, replace `npm run tracker` with a scheduler that sends `POST /api/cron/track` with the header `Authorization: Bearer <CRON_SECRET>` every 15 minutes.
+
+After changing `src/lib/db/schema.ts`, run `npm run db:generate` and then `npm run db:migrate`.
+
 ## Getting Started
 
 First, run the development server:

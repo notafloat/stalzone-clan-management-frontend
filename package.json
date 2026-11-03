@@ -6,10 +6,17 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "format": "prettier --write .",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "tracker": "node --env-file=.env.local scripts/tracker.mjs"
   },
   "dependencies": {
+    "drizzle-orm": "^0.45.4",
+    "jose": "^6.2.15",
     "next": "16.4.3",
+    "postgres": "^4.0.0",
     "react": "19.3.0",
     "react-dom": "19.3.0"
   },
@@ -18,8 +25,11 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "drizzle-kit": "^0.31.11",
     "eslint": "^9",
     "eslint-config-next": "16.4.3",
+    "prettier": "^3.9.10",
+    "prettier-plugin-tailwindcss": "^0.8.1",
     "tailwindcss": "^4",
     "typescript": "^5"
   }
