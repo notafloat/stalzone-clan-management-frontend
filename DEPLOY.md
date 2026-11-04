@@ -67,7 +67,7 @@ sudo netfilter-persistent save
 
 ## 6. Set up backups
 
-The database holds clan war marks, notes and history that exist nowhere else. On the server, run `crontab -e` and add:
+The database holds clan war marks, notes and history that exist nowhere else. On the server, run `mkdir -p ~/mozg/backups`, then `crontab -e`, and add:
 
 ```
 0 4 * * * /home/ubuntu/mozg/deploy/backup.sh >> /home/ubuntu/mozg/backups/backup.log 2>&1
