@@ -1,0 +1,83 @@
+# Everything on one server: docker compose -f compose.prod.yaml up -d --build
+# Settings come from .env next to this file, see .env.prod.example and DEPLOY.md.
+name: mozg
+
+x-database-url: &database-url postgres://stalzone:${POSTGRES_PASSWORD:?}@db:5432/stalzone_clan
+
+services:
+  db:
+    image: postgres:18
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: stalzone
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?}
+      POSTGRES_DB: stalzone_clan
+    volumes:
+      - db:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U stalzone -d stalzone_clan"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  migrate:
+    image: mozg-migrate
+    build:
+      context: .
+      target: migrator
+    environment:
+      DATABASE_URL: *database-url
+    depends_on:
+      db:
+        condition: service_healthy
+
+  app:
+    image: mozg-app
+    build:
+      context: .
+      target: runner
+    restart: unless-stopped
+    environment:
+      APP_URL: https://${DOMAIN:?}
+      EXBO_CLIENT_ID: ${EXBO_CLIENT_ID:?}
+      EXBO_CLIENT_SECRET: ${EXBO_CLIENT_SECRET:?}
+      SESSION_SECRET: ${SESSION_SECRET:?}
+      CRON_SECRET: ${CRON_SECRET:?}
+      DATABASE_URL: *database-url
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  tracker:
+    image: mozg-app
+    build:
+      context: .
+      target: runner
+    restart: unless-stopped
+    command: ["node", "scripts/tracker.mjs"]
+    environment:
+      APP_URL: http://app:3000
+      CRON_SECRET: ${CRON_SECRET:?}
+    depends_on:
+      - app
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      DOMAIN: ${DOMAIN:?}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - app
+
+volumes:
+  db:
+  caddy_data:
+  caddy_config:

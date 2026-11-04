@@ -9,6 +9,8 @@ const SECURITY_HEADERS = [
 ];
 
 const nextConfig: NextConfig = {
+  // Only the Docker build needs this: `next start` doesn't work with standalone output.
+  output: process.env.BUILD_STANDALONE ? "standalone" : undefined,
   poweredByHeader: false,
   headers: async () => [{ source: "/:path*", headers: SECURITY_HEADERS }],
   cacheComponents: true,
