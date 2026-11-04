@@ -6,6 +6,7 @@ import { UnavailablePage } from "@/components/UnavailablePage";
 import { getDb } from "@/lib/db/client";
 import { isOfficerRank } from "@/lib/members/members";
 import { getCurrentMembership, getRoster } from "@/lib/members/roster";
+import { getTemplateSettings } from "@/lib/settings/store";
 import { getLineup } from "@/lib/squads/store";
 
 const SQUADS_PATH = "/squads";
@@ -14,10 +15,10 @@ export default function SquadsPage() {
   return (
     <div className="font-golos">
       <SiteHeader />
-      <main className="mx-auto flex max-w-390 flex-col gap-4 px-[clamp(12px,2.4vw,28px)] pt-6 pb-28">
+      <main className="mx-auto flex max-w-390 flex-col gap-4 px-[clamp(14px,3vw,32px)] pt-7 pb-28">
         <Suspense
           fallback={
-            <div className="h-96 animate-pulse rounded-md border border-solid border-[rgb(223,226,231)] bg-white" />
+            <div className="h-96 animate-pulse rounded-md border border-solid border-line bg-surface" />
           }
         >
           <Squads />
@@ -46,15 +47,16 @@ async function Squads() {
     return null;
   });
   if (!saved) return unavailable("Отряды временно недоступны.");
+  const { templates } = await getTemplateSettings();
 
   return (
     <SquadsView
       initialLineup={saved.lineup}
       initialVersion={saved.version}
       members={members.map(({ name, rank }) => ({ name, rank }))}
-      clanLabel={`[${clan.info.tag}] ${clan.info.name}`}
       me={clan.member.name}
       canEdit={isOfficerRank(clan.member.rank)}
+      templates={templates}
     />
   );
 }

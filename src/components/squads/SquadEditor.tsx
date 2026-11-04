@@ -16,9 +16,9 @@ const REASON: LineupLocation = { kind: "reason" };
 const NO_REASON: LineupLocation = { kind: "no" };
 
 const INPUT =
-  "rounded-md border border-solid border-[rgb(217,220,225)] bg-white text-[13px] outline-none focus:border-[rgb(23,25,30)]";
+  "rounded-md border border-solid border-edge-217 bg-surface text-[13px] outline-none focus:border-ink";
 const EMPTY_SLOT =
-  "grid h-8.5 place-items-center rounded-[5px] border border-dashed border-[rgb(213,216,222)] text-[12.5px] text-[rgb(163,169,178)]";
+  "grid h-8.5 place-items-center rounded-[5px] border border-dashed border-edge-213 text-[12.5px] text-dim-163";
 const COUNT_PILL =
   "font-jetbrains-mono rounded-[10px] px-1.75 py-0.5 text-[12px] font-semibold";
 
@@ -133,9 +133,9 @@ export function SquadEditor({
 
   const zoneShadow = (isActive: boolean) =>
     isActive
-      ? "border-[rgb(23,25,30)] shadow-[0_0_0_3px_oklch(0.93_0.13_120)]"
+      ? "border-ink shadow-[0_0_0_3px_var(--tone-lime-93)]"
       : selection && !isMobile
-        ? "shadow-[0_0_0_2px_oklch(0.93_0.13_120)]"
+        ? "shadow-[0_0_0_2px_var(--tone-lime-93)]"
         : "";
 
   function renderChip(name: string, from: LineupLocation) {
@@ -180,11 +180,9 @@ export function SquadEditor({
           if (from.kind !== "pool") move(name, from, POOL);
         }}
         className={`flex h-8.5 min-w-0 cursor-pointer items-center overflow-hidden rounded-[5px] border text-[13.5px] select-none ${
-          isGuest
-            ? "border-dashed border-[rgb(163,169,178)]"
-            : "border-solid border-[rgb(223,226,231)]"
-        } ${name === me ? "bg-[oklch(0.965_0.06_120)] font-bold" : "bg-white font-medium"} ${
-          isSelected ? "shadow-[0_0_0_2px_rgb(23,25,30)]" : ""
+          isGuest ? "border-dashed border-dim-163" : "border-solid border-line"
+        } ${name === me ? "bg-tone-lime-965 font-bold" : "bg-surface font-medium"} ${
+          isSelected ? "shadow-[0_0_0_2px_var(--ink)]" : ""
         }`}
       >
         <span
@@ -221,15 +219,13 @@ export function SquadEditor({
         <aside
           {...pool.handlers}
           data-zone="pool"
-          className={`top-18 flex flex-col rounded-md border border-solid border-[rgb(223,226,231)] bg-white ${
+          className={`top-18 flex flex-col rounded-md border border-solid border-line bg-surface ${
             isMobile ? "static" : "sticky max-h-[calc(100vh-96px)]"
           } ${zoneShadow(pool.isActive)}`}
         >
-          <div className="flex h-11 items-center justify-between border-b border-solid border-[rgb(238,240,243)] px-3">
+          <div className="flex h-11 items-center justify-between border-b border-solid border-line-soft px-3">
             <span className="text-sm font-semibold">Состав клана</span>
-            <span
-              className={`${COUNT_PILL} min-w-6 bg-[rgb(241,242,244)] text-center`}
-            >
+            <span className={`${COUNT_PILL} min-w-6 bg-wash text-center`}>
               {poolNames.length}
             </span>
           </div>
@@ -248,14 +244,14 @@ export function SquadEditor({
           >
             {visiblePool.map((name) => renderChip(name, POOL))}
             {visiblePool.length === 0 && (
-              <div className="col-span-full px-1 py-3.5 text-center text-[12.5px] text-[rgb(163,169,178)]">
+              <div className="col-span-full px-1 py-3.5 text-center text-[12.5px] text-dim-163">
                 {poolNames.length === 0
                   ? "Все распределены"
                   : "Никого не найдено"}
               </div>
             )}
           </div>
-          <div className="flex gap-1.5 border-t border-solid border-[rgb(238,240,243)] p-2.5">
+          <div className="flex gap-1.5 border-t border-solid border-line-soft p-2.5">
             <input
               value={guestName}
               maxLength={40}
@@ -278,7 +274,7 @@ export function SquadEditor({
                 event.stopPropagation();
                 addGuest();
               }}
-              className="size-8 flex-none cursor-pointer rounded-md border border-solid border-[rgb(217,220,225)] bg-white text-base hover:bg-[rgb(245,246,248)]"
+              className="size-8 flex-none cursor-pointer rounded-md border border-solid border-edge-217 bg-surface text-base hover:bg-hover"
             >
               +
             </button>
@@ -297,9 +293,9 @@ export function SquadEditor({
                   key={squad.id}
                   {...zone.handlers}
                   data-zone={`squad:${squad.id}`}
-                  className={`flex min-h-59 flex-col rounded-md border border-solid border-[rgb(223,226,231)] bg-white ${zoneShadow(zone.isActive)}`}
+                  className={`flex min-h-59 flex-col rounded-md border border-solid border-line bg-surface ${zoneShadow(zone.isActive)}`}
                 >
-                  <div className="flex h-11 items-center gap-1.5 border-b border-solid border-[rgb(238,240,243)] pr-1.5 pl-3">
+                  <div className="flex h-11 items-center gap-1.5 border-b border-solid border-line-soft pr-1.5 pl-3">
                     <input
                       value={squad.name}
                       maxLength={40}
@@ -320,8 +316,8 @@ export function SquadEditor({
                     <span
                       className={`${COUNT_PILL} flex-none ${
                         isFull
-                          ? "bg-[oklch(0.94_0.06_150)] text-[oklch(0.42_0.12_150)]"
-                          : "bg-[rgb(241,242,244)] text-[rgb(79,85,96)]"
+                          ? "bg-tone-green-94 text-tone-green-42"
+                          : "bg-wash text-ink-soft"
                       }`}
                     >
                       {count}/{squad.size}
@@ -341,7 +337,7 @@ export function SquadEditor({
                           `Отряд «${squad.name}» удалён · игроки вернулись в состав`,
                         );
                       }}
-                      className="size-7 flex-none cursor-pointer rounded-sm border-0 bg-transparent text-[17px] leading-none text-[rgb(134,140,150)] hover:bg-[rgb(241,242,244)] hover:text-[rgb(23,25,30)]"
+                      className="size-7 flex-none cursor-pointer rounded-sm border-0 bg-transparent text-[17px] leading-none text-muted hover:bg-wash hover:text-ink"
                     >
                       ×
                     </button>
@@ -365,11 +361,11 @@ export function SquadEditor({
             <div
               {...reasonBox.handlers}
               data-zone="reason"
-              className={`overflow-hidden rounded-md border border-solid border-[oklch(0.88_0.05_150)] bg-white ${zoneShadow(reasonBox.isActive)}`}
+              className={`overflow-hidden rounded-md border border-solid border-tone-green-88 bg-surface ${zoneShadow(reasonBox.isActive)}`}
             >
-              <div className="flex h-10.5 items-center justify-center gap-2 border-b border-solid border-[oklch(0.9_0.04_150)] bg-[oklch(0.97_0.025_150)] text-[13.5px] font-semibold">
+              <div className="flex h-10.5 items-center justify-center gap-2 border-b border-solid border-tone-green-9 bg-tone-green-97 text-[13.5px] font-semibold">
                 Отсутствуют по причине
-                <span className={`${COUNT_PILL} bg-white font-normal`}>
+                <span className={`${COUNT_PILL} bg-surface font-normal`}>
                   {lineup.absentReason.length}
                 </span>
               </div>
@@ -398,7 +394,7 @@ export function SquadEditor({
                         }));
                       }}
                       onClick={(event) => event.stopPropagation()}
-                      className="h-8.5 min-w-0 rounded-[5px] border border-solid border-[rgb(227,229,233)] bg-[rgb(250,251,252)] px-2.5 text-[13px] outline-none focus:border-[rgb(23,25,30)] focus:bg-white"
+                      className="h-8.5 min-w-0 rounded-[5px] border border-solid border-line-227 bg-alt-250 px-2.5 text-[13px] outline-none focus:border-ink focus:bg-surface"
                     />
                   </div>
                 ))}
@@ -411,11 +407,11 @@ export function SquadEditor({
             <div
               {...noBox.handlers}
               data-zone="no"
-              className={`overflow-hidden rounded-md border border-solid border-[oklch(0.88_0.05_25)] bg-white ${zoneShadow(noBox.isActive)}`}
+              className={`overflow-hidden rounded-md border border-solid border-tone-red-88 bg-surface ${zoneShadow(noBox.isActive)}`}
             >
-              <div className="flex h-10.5 items-center justify-center gap-2 border-b border-solid border-[oklch(0.9_0.04_25)] bg-[oklch(0.97_0.025_25)] text-[13.5px] font-semibold">
+              <div className="flex h-10.5 items-center justify-center gap-2 border-b border-solid border-tone-red-9 bg-tone-red-97 text-[13.5px] font-semibold">
                 Отсутствуют без причины
-                <span className={`${COUNT_PILL} bg-white font-normal`}>
+                <span className={`${COUNT_PILL} bg-surface font-normal`}>
                   {lineup.absentNo.length}
                 </span>
               </div>
@@ -430,10 +426,10 @@ export function SquadEditor({
             </div>
           </div>
 
-          <p className="max-w-245 text-[12.5px] leading-[1.55] text-[rgb(134,140,150)]">
+          <p className="max-w-245 text-[12.5px] leading-[1.55] text-muted">
             {HELP}
           </p>
-          <div className="flex flex-wrap gap-x-3.5 gap-y-1.5 text-[12.5px] text-[rgb(79,85,96)]">
+          <div className="flex flex-wrap gap-x-3.5 gap-y-1.5 text-[12.5px] text-ink-soft">
             {CLAN_RANKS.map(({ id, label, color }) => (
               <span key={id} className="inline-flex items-center gap-1.5">
                 <span
@@ -444,7 +440,7 @@ export function SquadEditor({
               </span>
             ))}
             <span className="inline-flex items-center gap-1.5">
-              <span className="size-2.5 rounded-full border border-dashed border-[rgb(134,140,150)]" />
+              <span className="size-2.5 rounded-full border border-dashed border-muted" />
               не в клане
             </span>
           </div>
@@ -452,14 +448,14 @@ export function SquadEditor({
       </div>
 
       {selection && !isMobile && (
-        <div className="fixed bottom-6 left-1/2 z-45 flex -translate-x-1/2 items-center gap-3 rounded-lg bg-[rgb(23,25,30)] py-2 pr-2 pl-4 text-[13.5px] whitespace-nowrap text-white shadow-[0_10px_30px_rgba(23,25,30,0.25)]">
+        <div className="fixed bottom-21 left-1/2 z-45 flex -translate-x-1/2 items-center gap-3 rounded-lg bg-ink py-2 pr-2 pl-4 text-[13.5px] whitespace-nowrap text-on-ink shadow-[0_10px_30px_rgba(23,25,30,0.25)] min-[760px]:bottom-6">
           <span>
             Выбран <b>{selection.name}</b> — кликните отряд или список
           </span>
           <button
             type="button"
             onClick={() => setSelection(null)}
-            className="h-7.5 cursor-pointer rounded-[5px] border-0 bg-white/12 px-3 text-[13px] text-white"
+            className="h-7.5 cursor-pointer rounded-[5px] border-0 bg-on-ink/12 px-3 text-[13px] text-on-ink"
           >
             Отмена
           </button>
@@ -530,10 +526,10 @@ function MoveSheet({
       <div
         role="dialog"
         aria-label={`Переместить ${selection.name}`}
-        className="fixed inset-x-0 bottom-0 z-51 max-h-[78vh] overflow-auto rounded-t-[14px] bg-white px-3.5 pt-2 pb-[calc(16px+env(safe-area-inset-bottom))] shadow-[0_-10px_30px_rgba(23,25,30,0.15)]"
+        className="fixed inset-x-0 bottom-0 z-51 max-h-[78vh] overflow-auto rounded-t-[14px] bg-surface px-3.5 pt-2 pb-[calc(16px+env(safe-area-inset-bottom))] shadow-[0_-10px_30px_rgba(23,25,30,0.15)]"
       >
-        <div className="mx-auto mt-1 mb-3 h-1 w-9 rounded-xs bg-[rgb(213,216,222)]" />
-        <div className="text-[12.5px] text-[rgb(134,140,150)]">
+        <div className="mx-auto mt-1 mb-3 h-1 w-9 rounded-xs bg-edge-213" />
+        <div className="text-[12.5px] text-muted">
           Переместить · сейчас: {whereNow}
         </div>
         <div className="mt-0.5 mb-3.5 text-[19px] font-semibold">
@@ -550,12 +546,12 @@ function MoveSheet({
                 onClick={() => onMove(location)}
                 className={`flex h-12.5 items-center justify-between gap-2 rounded-lg border border-solid px-3 text-left text-[14.5px] font-medium ${
                   isCurrent
-                    ? "border-[oklch(0.8_0.12_120)] bg-[oklch(0.93_0.13_120)]"
-                    : "border-[rgb(217,220,225)] bg-white"
+                    ? "border-[oklch(0.8_0.12_120)] bg-tone-lime-93"
+                    : "border-edge-217 bg-surface"
                 } ${isFull && !isCurrent ? "opacity-45" : ""}`}
               >
                 <span className="truncate">{label}</span>
-                <span className="font-jetbrains-mono text-[12.5px] text-[rgb(134,140,150)]">
+                <span className="font-jetbrains-mono text-[12.5px] text-muted">
                   {count}
                 </span>
               </button>
@@ -565,7 +561,7 @@ function MoveSheet({
         <button
           type="button"
           onClick={onClose}
-          className="mt-2.5 h-12 w-full rounded-lg border border-solid border-[rgb(217,220,225)] bg-white text-[15px] font-medium"
+          className="mt-2.5 h-12 w-full rounded-lg border border-solid border-edge-217 bg-surface text-[15px] font-medium"
         >
           Отмена
         </button>

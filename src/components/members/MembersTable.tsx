@@ -1,137 +1,80 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { saveMemberNote } from "@/app/members/actions";
 import { LocalTime } from "@/components/LocalTime";
+import { NoteField } from "@/components/NoteField";
 import {
-  INACTIVE_DAYS,
+  ABSENCE_STYLES,
+  absenceFlag,
   playerPath,
   RANK_BY_ID,
-  type MemberData,
 } from "@/lib/members/members";
+import type { AbsenceRules } from "@/lib/settings/settings";
+import {
+  toggleSort,
+  type RosterRow,
+  type SortKey,
+  type SortState,
+} from "@/lib/members/roster-sort";
 
-type Row = MemberData & { pos: number };
-
-type ColumnKey =
-  | "pos"
-  | "name"
-  | "rank"
-  | "joinTime"
-  | "daysInClan"
-  | "lastLogin"
-  | "daysSinceLastLogin"
-  | "note";
+const WIDE_ONLY = "hidden min-[1100px]:table-cell";
+const MONO_CELL =
+  "font-jetbrains-mono px-3.5 text-[12.5px] whitespace-nowrap text-ink-soft";
+const HEADER_TEXT =
+  "text-[11px] font-semibold tracking-[0.1em] whitespace-nowrap text-ink-soft uppercase";
 
 type Column = {
-  key: ColumnKey;
+  key: SortKey;
   label: string;
   align?: "right";
-  width?: string;
-  /** Columns without it are not sortable. null means unknown, which always sorts last. */
-  sortValue?: (row: Row) => string | number | null;
+  className?: string;
 };
 
-type SortState = { key: ColumnKey; dir: "asc" | "desc" };
-
-const UNKNOWN_RANK_ORDER = 99;
-
 const COLUMNS: Column[] = [
-  { key: "pos", label: "#", width: "w-14", sortValue: (r) => r.pos },
-  { key: "name", label: "Ник", width: "w-[22%]", sortValue: (r) => r.name },
-  {
-    key: "rank",
-    label: "Звание",
-    sortValue: (r) => RANK_BY_ID[r.rank]?.order ?? UNKNOWN_RANK_ORDER,
-  },
-  {
-    key: "joinTime",
-    label: "В клане с",
-    sortValue: (r) => r.joinTime.getTime(),
-  },
-  {
-    key: "daysInClan",
-    label: "Дней в клане",
-    align: "right",
-    sortValue: (r) => r.daysInClan,
-  },
-  {
-    key: "lastLogin",
-    label: "Последний вход",
-    sortValue: (r) => r.lastLogin?.getTime() ?? null,
-  },
-  {
-    key: "daysSinceLastLogin",
-    label: "Не заходил, дн.",
-    align: "right",
-    sortValue: (r) => r.daysSinceLastLogin,
-  },
-  { key: "note", label: "Заметка", width: "w-[20%]" },
+  { key: "pos", label: "#", className: "w-13" },
+  { key: "name", label: "Ник", className: "w-[22%]" },
+  { key: "rank", label: "Звание" },
+  { key: "joinTime", label: "В клане с", className: WIDE_ONLY },
+  { key: "daysInClan", label: "Дней в клане", align: "right" },
+  { key: "lastLogin", label: "Последний вход" },
+  { key: "daysSinceLastLogin", label: "Не заходил, дн.", align: "right" },
 ];
 
-function compareValues(a: string | number, b: string | number) {
-  return typeof a === "string" && typeof b === "string"
-    ? a.localeCompare(b, "ru", { sensitivity: "base" })
-    : (a as number) - (b as number);
-}
-
-/** Ties keep roster order, and unknown values go last in both directions. */
-function sortRows(rows: Row[], { key, dir }: SortState) {
-  const sortValue = COLUMNS.find((column) => column.key === key)?.sortValue;
-  if (!sortValue) return rows;
-  const sign = dir === "asc" ? 1 : -1;
-
-  return [...rows].sort((a, b) => {
-    const x = sortValue(a);
-    const y = sortValue(b);
-    if (x === null || y === null) {
-      return (x === null ? 1 : 0) - (y === null ? 1 : 0) || a.pos - b.pos;
-    }
-    return compareValues(x, y) * sign || a.pos - b.pos;
-  });
-}
-
-function daysAwayClass(days: number | null) {
-  if (days === null) return "text-gray-400";
-  if (days === 0) return "text-gray-300";
-  if (days < 3) return "text-gray-600";
-  if (days < INACTIVE_DAYS) return "text-amber-600 font-semibold";
-  return "text-red-600 font-semibold";
-}
-
 export function MembersTable({
-  members,
-  emptyText = "В клане пока никого нет",
+  rows,
+  emptyText,
+  sort,
+  onSortChange,
+  canEditNotes,
+  rules,
 }: {
-  members: MemberData[];
-  emptyText?: string;
+  rows: RosterRow[];
+  emptyText: string;
+  sort: SortState;
+  onSortChange: (sort: SortState) => void;
+  canEditNotes: boolean;
+  rules: AbsenceRules;
 }) {
-  const [sort, setSort] = useState<SortState>({ key: "pos", dir: "asc" });
-
-  const rows = useMemo(() => {
-    const numbered = members.map((member, i) => ({ ...member, pos: i + 1 }));
-    return sortRows(numbered, sort);
-  }, [members, sort]);
-
-  function toggleSort(key: ColumnKey) {
-    setSort((current) => ({
-      key,
-      dir: current.key === key && current.dir === "asc" ? "desc" : "asc",
-    }));
-  }
-
   return (
-    <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
-      <table className="w-full min-w-250 border-collapse text-left text-sm">
-        <thead className="border-b border-gray-200 bg-gray-100/80">
+    <div className="overflow-x-auto rounded-md border border-solid border-line bg-surface">
+      <table className="w-full min-w-217.5 border-collapse text-left text-sm min-[1100px]:min-w-255">
+        <thead className="border-b border-solid border-line bg-head">
           <tr>
             {COLUMNS.map((column) => (
               <ColumnHeader
                 key={column.key}
                 column={column}
                 sortDir={sort.key === column.key ? sort.dir : undefined}
-                onSort={() => toggleSort(column.key)}
+                onSort={() => onSortChange(toggleSort(sort, column.key))}
               />
             ))}
+            {canEditNotes && (
+              <th scope="col" className={`${HEADER_TEXT} w-[20%] px-4`}>
+                Заметка
+              </th>
+            )}
           </tr>
         </thead>
 
@@ -139,8 +82,8 @@ export function MembersTable({
           {rows.length === 0 && (
             <tr>
               <td
-                colSpan={COLUMNS.length}
-                className="px-4 py-10 text-center text-gray-400"
+                colSpan={COLUMNS.length + 1}
+                className="p-10 text-center text-sm text-muted"
               >
                 {emptyText}
               </td>
@@ -148,7 +91,12 @@ export function MembersTable({
           )}
 
           {rows.map((row) => (
-            <MemberRow key={row.name} row={row} />
+            <MemberRow
+              key={row.name}
+              row={row}
+              canEditNotes={canEditNotes}
+              rules={rules}
+            />
           ))}
         </tbody>
       </table>
@@ -171,81 +119,107 @@ function ColumnHeader({
     <th
       scope="col"
       aria-sort={ariaSort}
-      className={`px-4 py-3 text-[11px] font-bold tracking-[0.08em] whitespace-nowrap text-gray-700 uppercase ${
-        column.align === "right" ? "text-right" : ""
-      } ${column.width ?? ""}`}
+      className={`${column.align === "right" ? "text-right" : ""} ${column.className ?? ""}`}
     >
-      {column.sortValue ? (
-        <button
-          type="button"
-          onClick={onSort}
-          className="group inline-flex cursor-pointer items-center gap-1 tracking-[inherit] uppercase hover:text-gray-950"
-        >
-          {column.label}
-          <span
-            aria-hidden
-            className={
-              sortDir ? "text-gray-900" : "opacity-0 group-hover:opacity-40"
-            }
-          >
+      <button
+        type="button"
+        onClick={onSort}
+        className={`${HEADER_TEXT} inline-flex h-10 cursor-pointer items-center gap-1 border-0 bg-transparent px-3.5`}
+      >
+        {column.label}
+        {sortDir && (
+          <span aria-hidden className="text-ink">
             {sortDir === "desc" ? "↓" : "↑"}
           </span>
-        </button>
-      ) : (
-        column.label
-      )}
+        )}
+      </button>
     </th>
   );
 }
 
-function MemberRow({ row }: { row: Row }) {
+function MemberRow({
+  row,
+  canEditNotes,
+  rules,
+}: {
+  row: RosterRow;
+  canEditNotes: boolean;
+  rules: AbsenceRules;
+}) {
+  const router = useRouter();
   const rank = RANK_BY_ID[row.rank];
+  const flag = absenceFlag(row, rules);
+  const href = playerPath(row.name);
+  const days = row.daysSinceLastLogin;
 
   return (
-    <tr className="border-b border-gray-100 transition-colors last:border-0 hover:bg-gray-50">
-      <td className="px-4 py-2.5 text-xs text-gray-400 tabular-nums">
+    <tr
+      onClick={() => router.push(href)}
+      className="h-10.5 cursor-pointer border-t border-solid border-line-soft hover:bg-alt-250"
+    >
+      <td className="px-3.5 font-jetbrains-mono text-[12px] text-dim-179">
         {row.pos}
       </td>
 
-      <td className="px-4 py-2.5 font-bold text-gray-900">
-        <Link href={playerPath(row.name)} className="hover:underline">
+      <td className="max-w-0 truncate px-3.5">
+        <Link
+          href={href}
+          onClick={(event) => event.stopPropagation()}
+          className="font-semibold text-ink no-underline"
+        >
           {row.name}
         </Link>
       </td>
 
-      <td className="px-4 py-2.5">
+      <td className="px-3.5">
         <span
-          className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[13px] font-medium whitespace-nowrap ${rank?.badge ?? "bg-gray-100 text-gray-600"}`}
+          className={`inline-flex h-5.5 items-center gap-1.5 rounded-[11px] pr-2.25 pl-1.75 text-[12.5px] font-medium whitespace-nowrap ${rank?.badge ?? "bg-wash text-ink-soft"}`}
         >
           <span
             className="size-1.5 rounded-full"
-            style={{ backgroundColor: rank?.color ?? "rgb(134,140,150)" }}
+            style={{ backgroundColor: rank?.color ?? "var(--muted)" }}
           />
           {rank?.label ?? row.rank}
         </span>
       </td>
 
-      <td className="px-4 py-2.5 font-mono text-[13px] whitespace-nowrap text-gray-600">
+      <td className={`${MONO_CELL} ${WIDE_ONLY}`}>
         <LocalTime value={row.joinTime} format="date" />
       </td>
 
-      <td className="px-4 py-2.5 text-right font-semibold text-gray-900 tabular-nums">
+      <td className="px-3.5 text-right font-jetbrains-mono text-[12.5px]">
         {row.daysInClan}
       </td>
 
-      <td className="px-4 py-2.5 font-mono text-[13px] whitespace-nowrap text-gray-600">
+      <td className={MONO_CELL}>
         <LocalTime value={row.lastLogin} format="dateTime" />
       </td>
 
-      <td
-        className={`px-4 py-2.5 text-right font-mono text-[13px] ${daysAwayClass(row.daysSinceLastLogin)}`}
-      >
-        {row.daysSinceLastLogin ?? "—"}
+      <td className="px-3.5 text-right">
+        <span
+          title={flag ? ABSENCE_STYLES[flag].label : undefined}
+          className={`inline-block min-w-7.5 rounded-sm px-1.75 py-0.5 text-center font-jetbrains-mono text-[12.5px] ${
+            flag
+              ? `font-semibold ${ABSENCE_STYLES[flag].className}`
+              : days
+                ? "text-ink-soft"
+                : "text-dim-179"
+          }`}
+        >
+          {days ?? "—"}
+        </span>
       </td>
 
-      <td className="px-4 py-2.5 text-[13px] text-gray-700">
-        {row.note || <span className="text-gray-400">—</span>}
-      </td>
+      {canEditNotes && (
+        <td className="px-2" onClick={(event) => event.stopPropagation()}>
+          <NoteField
+            initialValue={row.note ?? ""}
+            label={`Заметка: ${row.name}`}
+            updatedBy={row.noteUpdatedBy}
+            onSave={(value) => saveMemberNote(row.name, value)}
+          />
+        </td>
+      )}
     </tr>
   );
 }

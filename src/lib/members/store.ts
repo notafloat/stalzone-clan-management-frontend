@@ -1,8 +1,8 @@
 import "server-only";
-import { and, asc, eq, isNull, max } from "drizzle-orm";
+import { and, asc, desc, eq, isNull, max } from "drizzle-orm";
 import { cache } from "react";
 import type { Db } from "@/lib/db/client";
-import { clanInfo, players } from "@/lib/db/schema";
+import { activityDays, clanEvents, clanInfo, players } from "@/lib/db/schema";
 import type { CharacterClanInfo, ClanInfo } from "@/lib/stalzone/types";
 
 const CURRENT_CLAN_ID = 1;
@@ -59,6 +59,40 @@ export async function getStoredPlayers(db: Db) {
     .where(isNull(players.leftAt))
     .orderBy(asc(players.joinedAt));
   return rows.length > 0 ? rows : null;
+}
+
+/** Only for officers and above: the caller must check the rank first. */
+export async function getMemberNotes(db: Db) {
+  const rows = await db
+    .select({
+      name: players.name,
+      note: players.note,
+      noteUpdatedBy: players.noteUpdatedBy,
+    })
+    .from(players)
+    .where(isNull(players.leftAt));
+  return new Map(rows.map((row) => [row.name, row]));
+}
+
+/** Also finds players who have left, so their history can still be shown. */
+export async function findPlayerByName(db: Db, name: string) {
+  const rows = await db.select().from(players).where(eq(players.name, name));
+  return rows.find(({ leftAt }) => leftAt === null) ?? rows[0] ?? null;
+}
+
+export const getPlayerEvents = (db: Db, uuid: string) =>
+  db
+    .select()
+    .from(clanEvents)
+    .where(eq(clanEvents.playerUuid, uuid))
+    .orderBy(desc(clanEvents.occurredAt), desc(clanEvents.id));
+
+export async function getActivityDays(db: Db, uuid: string) {
+  const rows = await db
+    .select({ day: activityDays.day })
+    .from(activityDays)
+    .where(eq(activityDays.playerUuid, uuid));
+  return new Set(rows.map(({ day }) => day));
 }
 
 export async function saveClanInfo(db: Db, info: ClanInfo) {

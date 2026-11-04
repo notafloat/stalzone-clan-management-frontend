@@ -16,22 +16,20 @@ export function RecentJoins({ members }: { members: MemberData[] }) {
         {rows.map(({ name, rank, joinTime }) => (
           <div
             key={name}
-            className="grid min-h-11 grid-cols-[92px_84px_minmax(0,1fr)] items-center gap-2.5 border-t border-solid border-[rgb(238,240,243)] px-4 py-2 text-sm"
+            className="grid min-h-11 grid-cols-[92px_84px_minmax(0,1fr)] items-center gap-2.5 border-t border-solid border-line-soft px-4 py-2 text-sm"
           >
-            <span className="font-jetbrains-mono text-[12px] text-[rgb(134,140,150)]">
+            <span className="font-jetbrains-mono text-[12px] text-muted">
               <LocalTime value={joinTime} format="dayMonthTime" />
             </span>
-            <span className="font-semibold text-[oklch(0.52_0.13_150)]">
-              Вступил
-            </span>
+            <span className="font-semibold text-tone-green-52">Вступил</span>
             <span className="min-w-0 truncate">
               <Link
                 href={playerPath(name)}
-                className="font-semibold text-[rgb(23,25,30)] no-underline hover:underline"
+                className="font-semibold text-ink no-underline hover:underline"
               >
                 {name}
               </Link>{" "}
-              <span className="text-[rgb(134,140,150)]">
+              <span className="text-muted">
                 сейчас {RANK_BY_ID[rank]?.label ?? rank}
               </span>
             </span>

@@ -24,7 +24,13 @@ import type {
   ClanRank,
 } from "@/lib/stalzone/types";
 import { recordRoster } from "@/lib/tracker/tracker";
-import { isAllowedClan, RANK_BY_ID, REGION, type MemberData } from "./members";
+import {
+  isAllowedClan,
+  isOfficerRank,
+  RANK_BY_ID,
+  REGION,
+  type MemberData,
+} from "./members";
 import {
   getFreshTrackedAt,
   getStoredMembership,
@@ -118,6 +124,16 @@ export async function getCurrentMembership(
   if (!clan) redirect(characterSelectionPath(returnTo));
 
   return { session, clan };
+}
+
+/** For saving: null unless the player is an officer or above right now. */
+export async function getOfficerContext(returnTo: string) {
+  const db = getDb();
+  if (!db) return null;
+  const { clan } = await getCurrentMembership(returnTo, { live: true });
+  return isOfficerRank(clan.member.rank)
+    ? { db, name: clan.member.name }
+    : null;
 }
 
 const loginOnUnauthorized =

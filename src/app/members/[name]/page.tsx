@@ -12,7 +12,7 @@ export default function PlayerPage({ params }: { params: PlayerParams }) {
       <main className="mx-auto flex max-w-280 flex-col gap-4.5 px-[clamp(14px,3vw,32px)] pt-5 pb-26">
         <Suspense
           fallback={
-            <div className="h-96 animate-pulse rounded-md border border-solid border-[rgb(223,226,231)] bg-white" />
+            <div className="h-96 animate-pulse rounded-md border border-solid border-line bg-surface" />
           }
         >
           <PlayerProfile params={params} />

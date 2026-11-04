@@ -1,4 +1,4 @@
-import { pluralRu } from "@/lib/plural";
+import type { SquadTemplate } from "@/lib/settings/settings";
 
 export type Squad = {
   id: string;
@@ -36,24 +36,10 @@ const LIMITS = {
   absent: 200,
 };
 
-const numberedSquads = (count: number) =>
-  Array.from({ length: count }, (_, i) => ({
-    name: `Отряд ${i + 1}`,
-    size: DEFAULT_SQUAD_SIZE,
-  }));
-
-export const TEMPLATES = [3, 5, 7].map((count) => ({
-  id: String(count),
-  name: `${count} ${pluralRu(count, ["отряд", "отряда", "отрядов"])}`,
-  squads: numberedSquads(count),
-}));
-
-export type LineupTemplate = (typeof TEMPLATES)[number];
-
-export function defaultLineup(): Lineup {
+export function lineupFromTemplate(template: SquadTemplate): Lineup {
   return {
     event: DEFAULT_EVENT,
-    squads: numberedSquads(5).map((squad, i) => ({
+    squads: template.squads.map((squad, i) => ({
       ...squad,
       id: `s${i + 1}`,
       players: [],
@@ -166,10 +152,7 @@ export function movePlayer(
 }
 
 /** Squads with the same name keep their players; everyone else returns to the pool. */
-export function applyTemplate(
-  lineup: Lineup,
-  template: LineupTemplate,
-): Lineup {
+export function applyTemplate(lineup: Lineup, template: SquadTemplate): Lineup {
   const stamp = Date.now();
   return {
     ...lineup,

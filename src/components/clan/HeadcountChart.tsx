@@ -36,12 +36,12 @@ export function HeadcountChart({ days }: { days: HeadcountDay[] }) {
                     className="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-1.25"
                   >
                     <span
-                      className={`font-jetbrains-mono text-[10.5px] ${isToday ? "text-[rgb(23,25,30)]" : "text-[rgb(134,140,150)]"}`}
+                      className={`font-jetbrains-mono text-[10.5px] ${isToday ? "text-ink" : "text-muted"}`}
                     >
                       {day.count}
                     </span>
                     <div
-                      className={`w-full rounded-t-xs ${isToday ? "bg-[oklch(0.86_0.15_122)]" : "bg-[rgb(207,211,218)]"}`}
+                      className={`w-full rounded-t-xs ${isToday ? "bg-tone-lime-86" : "bg-edge-207"}`}
                       style={{ height: `${(day.count / peak) * 100}%` }}
                     />
                   </div>
@@ -49,23 +49,21 @@ export function HeadcountChart({ days }: { days: HeadcountDay[] }) {
               })}
             </div>
             <div
-              className={`flex border-t border-solid border-[rgb(207,211,218)] pt-1.5 ${COLUMN_GAP}`}
+              className={`flex border-t border-solid border-edge-207 pt-1.5 ${COLUMN_GAP}`}
             >
               {days.map((day) => (
                 <div
                   key={day.label}
-                  className="font-jetbrains-mono flex min-w-0 flex-1 flex-col items-center gap-0.5 text-[10.5px] leading-[1.25]"
+                  className="flex min-w-0 flex-1 flex-col items-center gap-0.5 font-jetbrains-mono text-[10.5px] leading-[1.25]"
                 >
                   <span
                     className={
-                      day.isWeekend
-                        ? "font-bold text-[rgb(23,25,30)]"
-                        : "text-[rgb(154,160,169)]"
+                      day.isWeekend ? "font-bold text-ink" : "text-dim-154"
                     }
                   >
                     {day.dayOfMonth}
                   </span>
-                  <span className="text-[oklch(0.52_0.13_150)]">
+                  <span className="text-tone-green-52">
                     {day.joined > 0 && `+${day.joined}`}
                   </span>
                 </div>
@@ -73,11 +71,9 @@ export function HeadcountChart({ days }: { days: HeadcountDay[] }) {
             </div>
           </div>
         </div>
-        <div className="mt-3 flex flex-wrap gap-4 text-[12.5px] text-[rgb(134,140,150)]">
+        <div className="mt-3 flex flex-wrap gap-4 text-[12.5px] text-muted">
           <span>
-            <span className="font-jetbrains-mono text-[oklch(0.52_0.13_150)]">
-              +n
-            </span>{" "}
+            <span className="font-jetbrains-mono text-tone-green-52">+n</span>{" "}
             вступили
           </span>
           <span>жирным — выходные</span>

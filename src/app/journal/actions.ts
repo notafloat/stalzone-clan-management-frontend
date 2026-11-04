@@ -3,10 +3,8 @@
 import { eq } from "drizzle-orm";
 import { getDb } from "@/lib/db/client";
 import { clanEvents } from "@/lib/db/schema";
-import { isOfficerRank } from "@/lib/members/members";
+import { isOfficerRank, MAX_NOTE_LENGTH } from "@/lib/members/members";
 import { getCurrentMembership } from "@/lib/members/roster";
-
-const MAX_NOTE_LENGTH = 500;
 
 /** Callable by anyone who can reach the site, so the rank is checked here, live. */
 export async function saveEventNote(

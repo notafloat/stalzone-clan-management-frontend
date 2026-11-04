@@ -5,6 +5,7 @@ import {
   Golos_Text,
   JetBrains_Mono,
 } from "next/font/google";
+import { THEME_SCRIPT } from "@/lib/theme";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -39,9 +40,16 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="ru"
+      suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} ${golosText.variable} ${jetBrainsMono.variable} h-full antialiased`}
     >
-      <body className="flex min-h-full flex-col">{children}</body>
+      <head>
+        {/* Runs before the first paint, so a dark page never flashes white. */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+      </head>
+      <body className="flex min-h-full flex-col has-data-bottom-nav:max-[759px]:pb-16">
+        {children}
+      </body>
     </html>
   );
 }

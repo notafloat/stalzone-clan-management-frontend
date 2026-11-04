@@ -1,7 +1,7 @@
 import { connection } from "next/server";
 import { getSession } from "@/lib/auth/session";
 import { formatTimeLeft } from "@/lib/dates";
-import { RANK_BY_ID, REGION } from "@/lib/members/members";
+import { isOfficerRank, RANK_BY_ID, REGION } from "@/lib/members/members";
 import { getDataUpdatedAt, loadMembership } from "@/lib/members/roster";
 import { AccountMenu } from "./AccountMenu";
 import { SyncButton } from "./SyncButton";
@@ -28,9 +28,10 @@ export async function HeaderAccount() {
       <AccountMenu
         name={member.name}
         rankLabel={rank?.label ?? member.rank}
-        rankBadge={rank?.badge ?? "bg-gray-100 text-gray-600"}
+        rankBadge={rank?.badge ?? "bg-wash text-ink-soft"}
         clanLabel={`[${info.tag}] ${info.name} · ${REGION}`}
         sessionTimeLeft={formatTimeLeft(session.exp * 1000 - now.getTime())}
+        showAdmin={isOfficerRank(member.rank)}
       />
     </>
   );

@@ -49,7 +49,7 @@ export type HeadcountDay = {
   isWeekend: boolean;
 };
 
-function shiftDay(key: string, days: number) {
+export function shiftDay(key: string, days: number) {
   const date = new Date(`${key}T00:00:00Z`);
   date.setUTCDate(date.getUTCDate() + days);
   return date.toISOString().slice(0, 10);

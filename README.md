@@ -17,7 +17,7 @@ The Stalzone API only reports the clan's current state, so a scheduled job recor
 
 Pages read members from this database, so they load quickly but can be up to one run behind. If the data is more than an hour old, pages go back to the much slower live API, and saving notes or lineups always checks the player's rank live.
 
-Locally, nothing is recorded while the app or `npm run tracker` is stopped. When hosted, replace `npm run tracker` with a scheduler that sends `POST /api/cron/track` with the header `Authorization: Bearer <CRON_SECRET>` every 15 minutes.
+Locally, nothing is recorded while the app or `npm run tracker` is stopped. When hosted, replace `npm run tracker` with a scheduler that sends `POST /api/cron/track` with the header `Authorization: Bearer <CRON_SECRET>` every 5 minutes.
 
 After changing `src/lib/db/schema.ts`, run `npm run db:generate` and then `npm run db:migrate`.
 

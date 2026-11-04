@@ -1,6 +1,6 @@
-// Local stand-in for a hosted scheduler: calls the tracker every 15 minutes while it runs.
+// Local stand-in for a hosted scheduler: calls the tracker every 5 minutes while it runs.
 // Needs the app running too. Start with: npm run tracker
-const INTERVAL_MS = 15 * 60 * 1000;
+const INTERVAL_MS = 5 * 60 * 1000;
 const url = new URL("/api/cron/track", process.env.APP_URL);
 
 async function run() {

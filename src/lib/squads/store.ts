@@ -2,7 +2,8 @@ import "server-only";
 import { and, eq } from "drizzle-orm";
 import type { Db } from "@/lib/db/client";
 import { lineups } from "@/lib/db/schema";
-import { defaultLineup, parseLineup, type Lineup } from "./lineup";
+import { getTemplateSettings } from "@/lib/settings/store";
+import { lineupFromTemplate, parseLineup, type Lineup } from "./lineup";
 
 const CURRENT_LINEUP_ID = 1;
 
@@ -11,10 +12,12 @@ export async function getLineup(db: Db) {
     .select()
     .from(lineups)
     .where(eq(lineups.id, CURRENT_LINEUP_ID));
-  return {
-    lineup: (row && parseLineup(row.data)) ?? defaultLineup(),
-    version: row?.version ?? 0,
-  };
+  const stored = row && parseLineup(row.data);
+  if (stored) return { lineup: stored, version: row.version };
+
+  const { templates, defaultId } = await getTemplateSettings();
+  const template = templates.find(({ id }) => id === defaultId) ?? templates[0];
+  return { lineup: lineupFromTemplate(template), version: row?.version ?? 0 };
 }
 
 /** Returns the new version, or null if someone else saved since `expectedVersion`. */

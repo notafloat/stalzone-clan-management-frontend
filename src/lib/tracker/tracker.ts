@@ -10,6 +10,7 @@ import {
 import { dayKey } from "@/lib/dates";
 import { isAllowedClan, RANK_BY_ID, REGION } from "@/lib/members/members";
 import { saveClanInfo } from "@/lib/members/store";
+import { rememberTrackingStart } from "@/lib/settings/store";
 import { fetchStalzonePublic, StalzoneError } from "@/lib/stalzone/client";
 import type {
   CharacterProfileData,
@@ -152,6 +153,7 @@ async function inBatches<T>(
 /** Checks every known member using only the app's credentials. */
 export async function runTracker(db: Db) {
   const now = new Date();
+  await rememberTrackingStart(db, now);
   const active = await db
     .select({ uuid: players.uuid })
     .from(players)

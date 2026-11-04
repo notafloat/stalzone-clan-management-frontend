@@ -1,5 +1,6 @@
 import {
   bigserial,
+  boolean,
   date,
   index,
   integer,
@@ -10,6 +11,7 @@ import {
   timestamp,
   unique,
 } from "drizzle-orm/pg-core";
+import type { AbsenceKind, StageMark } from "../kv/kv";
 import type { Lineup } from "../squads/lineup";
 import type { ClanInfo } from "../stalzone/types";
 
@@ -28,6 +30,10 @@ export const players = pgTable(
     leftAt: timestampTz("left_at"),
     /** Set after a live check, so later page loads can find the player without the API. */
     characterId: text("character_id"),
+    /** Only officers and above may read or change these. */
+    note: text("note"),
+    noteUpdatedBy: text("note_updated_by"),
+    noteUpdatedAt: timestampTz("note_updated_at"),
     updatedAt: timestampTz("updated_at").notNull().defaultNow(),
   },
   (table) => [
@@ -83,6 +89,43 @@ export const lineups = pgTable("lineups", {
   updatedBy: text("updated_by").notNull(),
   updatedAt: timestampTz("updated_at").notNull().defaultNow(),
 });
+
+/** Clan-wide settings that officers change on the admin page. */
+export const settings = pgTable("settings", {
+  key: text("key").primaryKey(),
+  value: jsonb("value").notNull(),
+  updatedBy: text("updated_by").notNull(),
+  updatedAt: timestampTz("updated_at").notNull().defaultNow(),
+});
+
+export const kvWars = pgTable("kv_wars", {
+  date: date("date", { mode: "string" }).primaryKey(),
+  confirmed: boolean("confirmed").notNull().default(false),
+  /** Fixed when the war is created, so later rule changes don't rewrite past attendance. */
+  mandatory: boolean("mandatory").notNull().default(true),
+  createdBy: text("created_by").notNull(),
+  createdAt: timestampTz("created_at").notNull().defaultNow(),
+});
+
+export const kvMarks = pgTable(
+  "kv_marks",
+  {
+    warDate: date("war_date", { mode: "string" })
+      .notNull()
+      .references(() => kvWars.date),
+    playerUuid: text("player_uuid")
+      .notNull()
+      .references(() => players.uuid),
+    plan: text("plan").notNull(),
+    stages: jsonb("stages").$type<StageMark[]>().notNull(),
+    absence: text("absence").$type<AbsenceKind>().notNull(),
+    reason: text("reason").notNull(),
+    why: text("why").notNull(),
+    updatedBy: text("updated_by").notNull(),
+    updatedAt: timestampTz("updated_at").notNull().defaultNow(),
+  },
+  (table) => [primaryKey({ columns: [table.warDate, table.playerUuid] })],
+);
 
 export const activityDays = pgTable(
   "activity_days",

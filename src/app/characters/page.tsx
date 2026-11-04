@@ -14,7 +14,7 @@ export default function CharactersPage({
     <AuthShell>
       <Suspense
         fallback={
-          <div className="h-96 w-full max-w-110 animate-pulse rounded-lg bg-gray-100" />
+          <div className="h-96 w-full max-w-110 animate-pulse rounded-lg bg-wash" />
         }
       >
         <CharacterStep searchParams={searchParams} />

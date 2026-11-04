@@ -6,26 +6,21 @@ import {
   useMemo,
   useRef,
   useState,
-  useSyncExternalStore,
   useTransition,
 } from "react";
 import { saveLineup, type SaveLineupResult } from "@/app/squads/actions";
-import {
-  applyTemplate,
-  newSquad,
-  TEMPLATES,
-  type Lineup,
-} from "@/lib/squads/lineup";
+import { applyTemplate, newSquad, type Lineup } from "@/lib/squads/lineup";
+import type { SquadTemplate } from "@/lib/settings/settings";
 import type { ClanRank } from "@/lib/stalzone/types";
+import { useIsMobile } from "@/lib/use-is-mobile";
 import { LineupDesktop, LineupMobile } from "./LineupView";
 import { SquadEditor } from "./SquadEditor";
 
-const MOBILE_QUERY = "(max-width: 759px)";
 const HISTORY_LIMIT = 50;
 const TOAST_MS = 2800;
 
 const TOOL_BUTTON =
-  "h-8 cursor-pointer rounded-md border border-solid border-[rgb(217,220,225)] bg-white px-3 text-[13px] font-medium hover:bg-[rgb(245,246,248)] disabled:cursor-default disabled:opacity-45";
+  "h-8 cursor-pointer rounded-md border border-solid border-edge-217 bg-surface px-3 text-[13px] font-medium hover:bg-hover disabled:cursor-default disabled:opacity-45";
 
 const SAVE_ERRORS: Record<
   Exclude<SaveLineupResult["status"], "saved">,
@@ -38,33 +33,20 @@ const SAVE_ERRORS: Record<
   unavailable: "База данных недоступна",
 };
 
-function subscribeToMobile(onChange: () => void) {
-  const query = window.matchMedia(MOBILE_QUERY);
-  query.addEventListener("change", onChange);
-  return () => query.removeEventListener("change", onChange);
-}
-
-const useIsMobile = () =>
-  useSyncExternalStore(
-    subscribeToMobile,
-    () => window.matchMedia(MOBILE_QUERY).matches,
-    () => false,
-  );
-
 export function SquadsView({
   initialLineup,
   initialVersion,
   members,
-  clanLabel,
   me,
   canEdit,
+  templates,
 }: {
   initialLineup: Lineup;
   initialVersion: number;
   members: { name: string; rank: ClanRank }[];
-  clanLabel: string;
   me: string;
   canEdit: boolean;
+  templates: SquadTemplate[];
 }) {
   const [lineup, setLineup] = useState(initialLineup);
   const [version, setVersion] = useState(initialVersion);
@@ -152,15 +134,18 @@ export function SquadsView({
   const segment = (isActive: boolean) =>
     `h-7.5 cursor-pointer rounded-[5px] border-0 px-3.5 text-[13.5px] font-medium ${
       isActive
-        ? "bg-white text-[rgb(23,25,30)] shadow-[0_1px_2px_rgba(23,25,30,0.14)]"
-        : "bg-transparent text-[rgb(79,85,96)]"
+        ? "bg-surface text-ink shadow-[0_1px_2px_rgba(23,25,30,0.14)]"
+        : "bg-transparent text-ink-soft"
     }`;
 
   return (
-    <>
-      <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3 border-b border-solid border-[rgb(223,226,231)] pb-4">
+    // The editor needs the room for its columns; the lineup matches the other pages' width.
+    <div
+      className={`mx-auto flex w-full flex-col gap-4 ${isEditor ? "" : "max-w-314"}`}
+    >
+      <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3 border-b border-solid border-line pb-4">
         <div className="min-w-0">
-          <div className="text-[11px] font-semibold tracking-[0.14em] text-[rgb(134,140,150)] uppercase">
+          <div className="text-[11px] font-semibold tracking-[0.14em] text-muted uppercase">
             Отряды · сбор
           </div>
           {isEditor ? (
@@ -173,7 +158,7 @@ export function SquadsView({
                 setLineup({ ...lineup, event: event.target.value });
                 setIsDirty(true);
               }}
-              className="mt-1.5 w-full min-w-70 rounded-sm border border-solid border-transparent bg-transparent text-[clamp(22px,3vw,28px)] leading-[1.15] font-semibold tracking-[-0.01em] outline-none hover:border-[rgb(217,220,225)] focus:border-[rgb(23,25,30)] focus:bg-white"
+              className="mt-1.5 w-full min-w-70 rounded-sm border border-solid border-transparent bg-transparent text-[clamp(22px,3vw,28px)] leading-[1.15] font-semibold tracking-[-0.01em] outline-none hover:border-edge-217 focus:border-ink focus:bg-surface"
             />
           ) : (
             <h1 className="mt-1.5 text-[clamp(22px,3vw,28px)] leading-[1.15] font-semibold tracking-[-0.01em]">
@@ -182,7 +167,7 @@ export function SquadsView({
           )}
         </div>
         {canEdit ? (
-          <div className="flex gap-0.5 rounded-[7px] bg-[rgb(233,235,238)] p-0.75">
+          <div className="flex gap-0.5 rounded-[7px] bg-track p-0.75">
             <button
               type="button"
               aria-pressed={!isEditor}
@@ -201,7 +186,7 @@ export function SquadsView({
             </button>
           </div>
         ) : (
-          <span className="text-[13px] text-[rgb(134,140,150)]">
+          <span className="text-[13px] text-muted">
             Составы редактируют офицеры и выше
           </span>
         )}
@@ -247,12 +232,12 @@ export function SquadsView({
             >
               Очистить всё
             </button>
-            <label className="flex h-8 items-center gap-1 rounded-md border border-solid border-[rgb(217,220,225)] bg-white pr-0.5 pl-2.5 text-[13px] text-[rgb(134,140,150)]">
+            <label className="flex h-8 items-center gap-1 rounded-md border border-solid border-edge-217 bg-surface pr-0.5 pl-2.5 text-[13px] text-muted">
               Шаблон
               <select
                 value=""
                 onChange={(event) => {
-                  const template = TEMPLATES.find(
+                  const template = templates.find(
                     ({ id }) => id === event.target.value,
                   );
                   if (!template) return;
@@ -261,10 +246,10 @@ export function SquadsView({
                     `Шаблон «${template.name}» применён — игроки из отрядов с теми же названиями сохранены`,
                   );
                 }}
-                className="h-7.5 cursor-pointer border-0 bg-transparent text-[13px] font-medium text-[rgb(23,25,30)] outline-none"
+                className="h-7.5 cursor-pointer border-0 bg-transparent text-[13px] font-medium text-ink outline-none"
               >
                 <option value="">выбрать</option>
-                {TEMPLATES.map(({ id, name }) => (
+                {templates.map(({ id, name }) => (
                   <option key={id} value={id}>
                     {name}
                   </option>
@@ -273,7 +258,7 @@ export function SquadsView({
             </label>
             <div className="flex-1" />
             {isDirty && (
-              <span className="text-[12.5px] text-[oklch(0.52_0.12_65)]">
+              <span className="text-[12.5px] text-tone-amber-52">
                 есть несохранённые изменения
               </span>
             )}
@@ -281,7 +266,7 @@ export function SquadsView({
               type="button"
               disabled={!isDirty || isSaving}
               onClick={save}
-              className="h-8 cursor-pointer rounded-md border border-solid border-[rgb(23,25,30)] bg-[rgb(23,25,30)] px-4 text-[13px] font-semibold text-white hover:bg-[rgb(44,48,56)] disabled:cursor-default disabled:opacity-50"
+              className="h-8 cursor-pointer rounded-md border border-solid border-ink bg-ink px-4 text-[13px] font-semibold text-on-ink hover:bg-ink-strong disabled:cursor-default disabled:opacity-50"
             >
               {isSaving ? "Сохранение…" : "Сохранить"}
             </button>
@@ -302,29 +287,19 @@ export function SquadsView({
           />
         </>
       ) : isMobile ? (
-        <LineupMobile
-          lineup={lineup}
-          clanLabel={clanLabel}
-          me={me}
-          rankOf={rankOf}
-        />
+        <LineupMobile lineup={lineup} me={me} rankOf={rankOf} />
       ) : (
-        <LineupDesktop
-          lineup={lineup}
-          clanLabel={clanLabel}
-          me={me}
-          rankOf={rankOf}
-        />
+        <LineupDesktop lineup={lineup} me={me} rankOf={rankOf} />
       )}
 
       {toast && (
         <div
           role="status"
-          className={`fixed left-1/2 z-70 max-w-[min(560px,calc(100vw-24px))] -translate-x-1/2 rounded-lg bg-[rgb(23,25,30)] px-4 py-2.75 text-[13.5px] leading-[1.4] text-white shadow-[0_10px_30px_rgba(23,25,30,0.25)] ${isMobile ? "bottom-21" : "bottom-6"}`}
+          className={`fixed left-1/2 z-70 max-w-[min(560px,calc(100vw-24px))] -translate-x-1/2 rounded-lg bg-ink px-4 py-2.75 text-[13.5px] leading-[1.4] text-on-ink shadow-[0_10px_30px_rgba(23,25,30,0.25)] ${isMobile ? "bottom-21" : "bottom-6"}`}
         >
           {toast}
         </div>
       )}
-    </>
+    </div>
   );
 }

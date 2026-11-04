@@ -39,18 +39,18 @@ export async function CharacterStep({
   return (
     <div className="flex w-full max-w-110 flex-col gap-4.5">
       <form action="/api/auth/logout" method="post" className="self-start">
-        <button className="h-7.5 cursor-pointer border-0 bg-transparent p-0 text-[13.5px] text-[rgb(79,85,96)]">
+        <button className="h-7.5 cursor-pointer border-0 bg-transparent p-0 text-[13.5px] text-ink-soft">
           ← Другой аккаунт
         </button>
       </form>
       <div>
-        <div className="text-[11px] font-semibold tracking-[0.14em] text-[rgb(134,140,150)] uppercase">
+        <div className="text-[11px] font-semibold tracking-[0.14em] text-muted uppercase">
           Аккаунт EXBO · {REGION}
         </div>
         <h1 className="mt-2 text-[clamp(26px,3.4vw,34px)] leading-[1.15] font-semibold tracking-[-0.015em]">
           Выберите персонажа
         </h1>
-        <p className="mt-2.5 text-[15px] leading-[1.55] text-[rgb(79,85,96)]">
+        <p className="mt-2.5 text-[15px] leading-[1.55] text-ink-soft">
           Войти можно персонажем из клана [MOZG].
         </p>
       </div>
@@ -59,7 +59,7 @@ export async function CharacterStep({
         initialId={session.characterId}
         returnTo={returnTo}
       />
-      <p className="text-[12.5px] leading-[1.55] text-[rgb(134,140,150)]">
+      <p className="text-[12.5px] leading-[1.55] text-muted">
         Вход действует 30 дней. Клан проверяется при каждом открытии страницы —
         если игрок покинет клан, доступ закроется сам.
       </p>

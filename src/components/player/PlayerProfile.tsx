@@ -5,11 +5,13 @@ import { Panel, PanelAsideText } from "@/components/clan/Panel";
 import { LocalTime } from "@/components/LocalTime";
 import { StatCard, StatGrid } from "@/components/StatCard";
 import { daysBetween } from "@/lib/dates";
+import { getDb } from "@/lib/db/client";
 import { getGameStats } from "@/lib/members/game-stats";
 import {
   allianceLabel,
-  INACTIVE_DAYS,
-  needsAttention,
+  ABSENCE_STYLES,
+  absenceFlag,
+  isOfficerRank,
   playerPath,
   RANK_BY_ID,
   REGION,
@@ -20,7 +22,18 @@ import {
   getPublicProfile,
   getRoster,
 } from "@/lib/members/roster";
+import {
+  findPlayerByName,
+  getActivityDays,
+  getMemberNotes,
+  getPlayerEvents,
+} from "@/lib/members/store";
 import { DAY_FORMS, pluralRu } from "@/lib/plural";
+import { getAbsenceRules, getTrackingStart } from "@/lib/settings/store";
+import type { Lineup } from "@/lib/squads/lineup";
+import { getLineup } from "@/lib/squads/store";
+import { MemberNoteBox } from "./MemberNoteBox";
+import { ActivityGrid, RankHistory } from "./PlayerSections";
 
 export type PlayerParams = Promise<{ name: string }>;
 
@@ -40,6 +53,29 @@ function decodeName(raw: string) {
   }
 }
 
+function logFailure(what: string) {
+  return (error: unknown) => {
+    console.error(`Could not load ${what}:`, error);
+    return null;
+  };
+}
+
+function lineupPlace(lineup: Lineup, name: string) {
+  const squad = lineup.squads.find(({ players }) => players.includes(name));
+  if (squad) {
+    return {
+      value: squad.name,
+      hint: `${squad.players.length}/${squad.size} в отряде`,
+    };
+  }
+  const absence = lineup.absentReason.find((entry) => entry.name === name);
+  if (absence) return { value: "отсутствует", hint: "по причине" };
+  if (lineup.absentNo.includes(name)) {
+    return { value: "отсутствует", hint: "без причины" };
+  }
+  return { value: "не распределён", hint: "в общем составе" };
+}
+
 function PlayerHeading({
   name,
   badge,
@@ -50,8 +86,8 @@ function PlayerHeading({
   subline: string;
 }) {
   return (
-    <div className="border-b border-solid border-[rgb(223,226,231)] pb-4.5">
-      <div className="text-[11px] font-semibold tracking-[0.14em] text-[rgb(134,140,150)] uppercase">
+    <div className="border-b border-solid border-line pb-4.5">
+      <div className="text-[11px] font-semibold tracking-[0.14em] text-muted uppercase">
         Профиль игрока
       </div>
       <div className="mt-2 flex flex-wrap items-center gap-x-3.5 gap-y-2.5">
@@ -60,7 +96,7 @@ function PlayerHeading({
         </h1>
         {badge}
       </div>
-      <div className="mt-2 text-sm text-[rgb(79,85,96)]">{subline}</div>
+      <div className="mt-2 text-sm text-ink-soft">{subline}</div>
     </div>
   );
 }
@@ -77,7 +113,7 @@ function NeighbourLink({
     <Link
       href={playerPath(member.name)}
       title={isPrev ? "Предыдущий" : "Следующий"}
-      className="flex h-8 max-w-[38vw] min-w-0 items-center gap-1.5 overflow-hidden rounded-md border border-solid border-[rgb(217,220,225)] bg-white px-2.5 text-[13px] whitespace-nowrap text-[rgb(79,85,96)] no-underline hover:bg-[rgb(245,246,248)]"
+      className="flex h-8 max-w-[38vw] min-w-0 items-center gap-1.5 overflow-hidden rounded-md border border-solid border-edge-217 bg-surface px-2.5 text-[13px] whitespace-nowrap text-ink-soft no-underline hover:bg-hover"
     >
       {isPrev && "← "}
       <span className="truncate">{member.name}</span>
@@ -99,11 +135,20 @@ export async function PlayerProfile({ params }: { params: PlayerParams }) {
   const backLink = (
     <Link
       href="/members"
-      className="flex-none text-[13.5px] text-[rgb(79,85,96)] no-underline"
+      className="flex-none text-[13.5px] text-ink-soft no-underline"
     >
       ← Состав клана
     </Link>
   );
+
+  const db = getDb();
+  const record = db
+    ? await findPlayerByName(db, name).catch(logFailure("the player"))
+    : null;
+  const events =
+    db && record
+      ? await getPlayerEvents(db, record.uuid).catch(logFailure("the events"))
+      : null;
 
   const index = members.findIndex((member) => member.name === name);
   if (index === -1) {
@@ -113,13 +158,16 @@ export async function PlayerProfile({ params }: { params: PlayerParams }) {
         <PlayerHeading
           name={name}
           badge={
-            <span className="inline-flex h-6.5 items-center gap-1.75 rounded-[13px] border border-solid border-[rgb(223,226,231)] bg-white pr-2.75 pl-2.25 text-[13.5px] font-medium text-[rgb(134,140,150)]">
-              <span className="size-1.75 rounded-full bg-[rgb(213,216,222)]" />
+            <span className="inline-flex h-6.5 items-center gap-1.75 rounded-[13px] border border-solid border-line bg-surface pr-2.75 pl-2.25 text-[13.5px] font-medium text-muted">
+              <span className="size-1.75 rounded-full bg-edge-213" />
               не в клане
             </span>
           }
           subline={`Сейчас не состоит в ${clanLabel}`}
         />
+        {record && (
+          <RankHistory events={events ?? []} title="История в клане" />
+        )}
       </>
     );
   }
@@ -129,7 +177,20 @@ export async function PlayerProfile({ params }: { params: PlayerParams }) {
   const member = await withLastLogin(members[index]);
   const rank = RANK_BY_ID[member.rank];
   const { daysSinceLastLogin: daysAway, daysInClan } = member;
-  const isFlagged = needsAttention(member);
+  const rules = await getAbsenceRules();
+  const flag = absenceFlag(member, rules);
+
+  const canSeeNote = isOfficerRank(clan.member.rank);
+  const [activeDays, trackingStart, saved, notes] = await Promise.all([
+    db && record
+      ? getActivityDays(db, record.uuid).catch(logFailure("the activity"))
+      : null,
+    getTrackingStart(),
+    db ? getLineup(db).catch(logFailure("the lineup")) : null,
+    // Fetched only after the rank check, so that notes never reach anyone else's browser.
+    db && canSeeNote ? getMemberNotes(db).catch(logFailure("the notes")) : null,
+  ]);
+  const place = saved && lineupPlace(saved.lineup, name);
 
   return (
     <>
@@ -148,17 +209,19 @@ export async function PlayerProfile({ params }: { params: PlayerParams }) {
         badge={
           <>
             <span
-              className={`inline-flex h-6.5 items-center gap-1.75 rounded-[13px] pr-2.75 pl-2.25 text-[13.5px] font-medium ${rank?.badge ?? "bg-gray-100 text-gray-600"}`}
+              className={`inline-flex h-6.5 items-center gap-1.75 rounded-[13px] pr-2.75 pl-2.25 text-[13.5px] font-medium ${rank?.badge ?? "bg-wash text-ink-soft"}`}
             >
               <span
                 className="size-1.75 rounded-full"
-                style={{ backgroundColor: rank?.color ?? "rgb(134,140,150)" }}
+                style={{ backgroundColor: rank?.color ?? "var(--muted)" }}
               />
               {rank?.label ?? member.rank}
             </span>
-            {isFlagged && (
-              <span className="inline-flex h-6.5 items-center rounded-sm bg-[oklch(0.955_0.035_25)] px-2.5 text-[13px] font-semibold text-[oklch(0.52_0.19_25)]">
-                Требует внимания
+            {flag && (
+              <span
+                className={`inline-flex h-6.5 items-center rounded-sm px-2.5 text-[13px] font-semibold ${ABSENCE_STYLES[flag].className}`}
+              >
+                {ABSENCE_STYLES[flag].label}
               </span>
             )}
           </>
@@ -186,24 +249,72 @@ export async function PlayerProfile({ params }: { params: PlayerParams }) {
         <StatCard
           label="Не заходил"
           value={daysAway === null ? "—" : formatDays(daysAway)}
-          hint={isFlagged ? `порог: ${INACTIVE_DAYS} дн.` : "в норме"}
-          valueClassName={isFlagged ? "text-[oklch(0.52_0.19_25)]" : ""}
+          hint={
+            !flag
+              ? "в норме"
+              : daysAway === null
+                ? "вход неизвестен"
+                : `порог: ${flag === "crit" ? rules.crit : rules.warn} дн.`
+          }
+          valueClassName={
+            flag === "crit"
+              ? "text-tone-red-52"
+              : flag === "warn"
+                ? "text-tone-amber-52"
+                : ""
+          }
         />
+        {place && saved && (
+          <StatCard
+            label={
+              saved.lineup.event === "Сбор"
+                ? "Сбор"
+                : `Сбор · ${saved.lineup.event}`
+            }
+            value={place.value}
+            hint={place.hint}
+          />
+        )}
       </StatGrid>
 
-      <Panel
-        title="Статистика из игры"
-        aside={<PanelAsideText>STALZONE API</PanelAsideText>}
-        className=""
-      >
-        <Suspense
-          fallback={
-            <div className="h-21.5 animate-pulse bg-[rgb(250,251,252)]" />
-          }
-        >
-          <GameStats name={name} />
-        </Suspense>
-      </Panel>
+      <div className="flex flex-wrap items-start gap-4">
+        <div className="flex min-w-0 flex-[1.5_1_460px] flex-col gap-4">
+          {activeDays && (
+            <ActivityGrid
+              activeDays={activeDays}
+              joinedAt={member.joinTime}
+              trackingStart={trackingStart}
+              now={new Date()}
+            />
+          )}
+          <Panel
+            title="Статистика из игры"
+            aside={<PanelAsideText>STALZONE API</PanelAsideText>}
+            className=""
+          >
+            <Suspense
+              fallback={<div className="h-21.5 animate-pulse bg-alt-250" />}
+            >
+              <GameStats name={name} />
+            </Suspense>
+          </Panel>
+        </div>
+        <div className="flex min-w-0 flex-[1_1_320px] flex-col gap-4">
+          {events && <RankHistory events={events} />}
+          {notes && (
+            <Panel
+              title="Заметка офицеров"
+              aside={<PanelAsideText>видят офицеры и выше</PanelAsideText>}
+              className=""
+            >
+              <MemberNoteBox
+                name={name}
+                initialValue={notes.get(name)?.note ?? ""}
+              />
+            </Panel>
+          )}
+        </div>
+      </div>
     </>
   );
 }
@@ -227,7 +338,7 @@ async function GameStats({ name }: { name: string }) {
 
   if (!stats) {
     return (
-      <div className="px-4 py-3.5 text-sm text-[rgb(134,140,150)]">
+      <div className="px-4 py-3.5 text-sm text-muted">
         Статистика недоступна
       </div>
     );
@@ -262,9 +373,9 @@ function formatCount(value: number | null) {
 
 function GameStat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="px-4 pt-3.5 pb-4 shadow-[inset_-1px_0_0_rgb(238,240,243),inset_0_-1px_0_rgb(238,240,243)]">
-      <div className="text-[12.5px] text-[rgb(134,140,150)]">{label}</div>
-      <div className="font-jetbrains-mono mt-1.5 text-[22px] font-semibold tracking-[-0.02em]">
+    <div className="px-4 pt-3.5 pb-4 shadow-[inset_-1px_0_0_var(--line-soft),inset_0_-1px_0_var(--line-soft)]">
+      <div className="text-[12.5px] text-muted">{label}</div>
+      <div className="mt-1.5 font-jetbrains-mono text-[22px] font-semibold tracking-[-0.02em]">
         {value}
       </div>
     </div>

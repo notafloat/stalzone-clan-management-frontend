@@ -18,24 +18,24 @@ export function LoginForm({ errorMessage }: { errorMessage?: string }) {
       {/* A plain link: next/link would prefetch this route, setting its cookies before any click. */}
       <a
         href="/api/auth/login"
-        className="flex h-12.5 items-center justify-center rounded-lg bg-[#17191e] text-[15.5px] font-semibold text-white"
+        className="flex h-12.5 items-center justify-center rounded-lg bg-ink text-[15.5px] font-semibold text-on-ink"
       >
         Войти через EXBO
       </a>
-      <ol className="flex flex-col gap-2.5 border-t border-[rgb(238,240,243)] pt-4.5">
+      <ol className="flex flex-col gap-2.5 border-t border-line-soft pt-4.5">
         {LOGIN_STEPS.map((step, index) => (
           <li
             key={step}
-            className="grid grid-cols-[28px_minmax(0,1fr)] gap-2 text-[13.5px] leading-[1.45] text-[rgb(79,85,96)]"
+            className="grid grid-cols-[28px_minmax(0,1fr)] gap-2 text-[13.5px] leading-[1.45] text-ink-soft"
           >
-            <span className="font-jetbrains-mono pt-px text-[12px] text-[rgb(163,169,178)]">
+            <span className="pt-px font-jetbrains-mono text-[12px] text-dim-163">
               {String(index + 1).padStart(2, "0")}
             </span>
             {step}
           </li>
         ))}
       </ol>
-      <div className="font-jetbrains-mono text-[11.5px] text-[rgb(163,169,178)]">
+      <div className="font-jetbrains-mono text-[11.5px] text-dim-163">
         STALZONE API · OAuth 2.0 · eapi.stalzone.com
       </div>
     </>
