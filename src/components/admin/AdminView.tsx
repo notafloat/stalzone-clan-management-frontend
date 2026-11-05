@@ -712,10 +712,11 @@ function KvTab({ initial, wars }: { initial: KvRules; wars: KvWar[] }) {
 }
 
 const PERMISSIONS: { label: string; ranks: number }[] = [
-  { label: "Состав, журнал, отряды и КВ", ranks: CLAN_RANKS.length },
+  { label: "Состав, журнал, отряды, КВ и карты", ranks: CLAN_RANKS.length },
   { label: "Свой отряд", ranks: CLAN_RANKS.length },
   { label: "Заметки об игроках", ranks: 3 },
   { label: "Редактор отрядов", ranks: 3 },
+  { label: "Рисование планов на картах", ranks: 3 },
   { label: "Отметка явки на КВ", ranks: 3 },
   { label: "Шаблоны и правила (эта панель)", ranks: 3 },
 ];

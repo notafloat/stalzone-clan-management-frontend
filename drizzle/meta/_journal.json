@@ -50,6 +50,20 @@
       "when": 1793788925038,
       "tag": "0006_slippery_vampiro",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1793873471616,
+      "tag": "0007_tiresome_molly_hayes",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1793876855133,
+      "tag": "0008_sad_maximus",
+      "breakpoints": true
     }
   ]
 }

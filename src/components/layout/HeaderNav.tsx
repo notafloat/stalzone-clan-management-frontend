@@ -9,6 +9,7 @@ const NAV_LINKS = [
   { href: "/journal", label: "Журнал" },
   { href: "/squads", label: "Отряды" },
   { href: "/kv", label: "КВ" },
+  { href: "/maps", label: "Карты" },
 ];
 const ADMIN_LINK = { href: "/admin", label: "Админ" };
 
@@ -18,6 +19,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/journal": "Журнал",
   "/squads": "Отряды",
   "/kv": "Активность на КВ",
+  "/maps": "Карты",
   "/admin": "Настройки клана",
 };
 
@@ -67,7 +69,7 @@ export function BottomNav() {
   return (
     <nav
       data-bottom-nav
-      className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-solid border-line-227 bg-surface pb-[env(safe-area-inset-bottom)] font-golos min-[760px]:hidden"
+      className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-6 border-t border-solid border-line-227 bg-surface pb-[env(safe-area-inset-bottom)] font-golos min-[760px]:hidden"
     >
       {NAV_LINKS.map(({ href, label }) => {
         const isActive = pathname.startsWith(href);

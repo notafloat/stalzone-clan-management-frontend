@@ -1,6 +1,7 @@
 import {
   bigserial,
   boolean,
+  customType,
   date,
   index,
   integer,
@@ -12,6 +13,7 @@ import {
   unique,
 } from "drizzle-orm/pg-core";
 import type { AbsenceKind, StageMark } from "../kv/kv";
+import type { MapPlan } from "../maps/maps";
 import type { Lineup } from "../squads/lineup";
 import type { ClanInfo } from "../stalzone/types";
 
@@ -87,6 +89,28 @@ export const lineups = pgTable("lineups", {
   data: jsonb("data").$type<Lineup>().notNull(),
   version: integer("version").notNull(),
   updatedBy: text("updated_by").notNull(),
+  updatedAt: timestampTz("updated_at").notNull().defaultNow(),
+});
+
+const bytea = customType<{ data: Buffer }>({ dataType: () => "bytea" });
+
+/** Kept in the database so that the images are part of its backups. */
+export const customMaps = pgTable("custom_maps", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  width: integer("width").notNull(),
+  height: integer("height").notNull(),
+  image: bytea("image").notNull(),
+  createdBy: text("created_by").notNull(),
+  createdAt: timestampTz("created_at").notNull().defaultNow(),
+});
+
+export const mapPlans = pgTable("map_plans", {
+  id: text("id").primaryKey(),
+  data: jsonb("data").$type<MapPlan>().notNull(),
+  version: integer("version").notNull(),
+  updatedBy: text("updated_by").notNull(),
+  createdAt: timestampTz("created_at").notNull().defaultNow(),
   updatedAt: timestampTz("updated_at").notNull().defaultNow(),
 });
 
